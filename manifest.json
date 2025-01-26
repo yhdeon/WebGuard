@@ -1,0 +1,21 @@
+{
+    "manifest_version": 3,
+    "name": "WebGuard",
+    "description": "A browser extension to safeguard your browsing experience.",
+    "version": "1.0",
+    "icons": {
+    },
+    "action": {
+      "default_popup": "popup/popup.html"
+    },
+    "permissions": ["activeTab", "scripting"],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "content_scripts": [
+      {
+        "matches": ["https://*/*", "http://*/*"],
+        "js": ["content.js"]
+      }
+    ]
+  }
