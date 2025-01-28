@@ -3,6 +3,10 @@ document.getElementById("Scan").addEventListener("click", () => {
     // Query the active tab in the current window
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs.length > 0) {
+          // get the current tab url
+          
+            const [tab] = /*await*/ chrome.tabs.query({ active: true, currentWindow: true });
+            const url = tab.url;
             // Execute a script in the context of the current tab
             chrome.scripting.executeScript({
                 target: { tabId: tabs[0].id },
@@ -27,9 +31,19 @@ document.getElementById("Scan").addEventListener("click", () => {
                       }
                     };
 
+                   
                     detectInput();
                     detectPwdInput();
-                },
+                }
+            });
+
+            // output the result in a div 
+            chrome.runtime.sendMessage({ action: "scan", url }, (response) => {
+                const resultDiv = document.getElementById("result");
+                resultDiv.innerHTML = `
+                    
+                    <p><strong>Heuristic Check:</strong> ${response.heuristicCheck}</p>
+                `;
             });
         } else {
             console.error("No active tab found.");
