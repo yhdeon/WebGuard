@@ -1,0 +1,29 @@
+{
+    "manifest_version": 3,
+    "name": "VirusTotal URL Checker",
+    "version": "1.0",
+    "permissions": [
+      "webRequest",
+      "storage",
+      "scripting"
+    ],
+    "host_permissions": [
+      "https://www.virustotal.com/api/v3/*",
+      "<all_urls>"
+    ],
+    "action": {
+      "default_popup": "popup.html",
+      "default_icon": {
+        "48": "cat.png"
+      }
+    },
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["content.js"]
+        }
+    ]
+  }
