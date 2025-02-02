@@ -50,3 +50,4 @@ chrome.webNavigation.onCommitted.addListener((details) => {
 chrome.tabs.onRemoved.addListener((tabId) => {
     delete navigationStates[tabId];
 });
+
