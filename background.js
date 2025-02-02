@@ -91,8 +91,65 @@ async function checkSQLInjection(url) {
       report: theresult
   };
 }
+// Maybe a function to scan for forms to check?
+
 // Sql Injection scan tester for textboxes in the web form
 
+async function checkFormSQLInjection(formSelector) {
+  const form = document.querySelector(formSelector);
+  // check if a form exist 
+  if (!form) {
+    console.error('Form not found');
+    return;
+  }
+  // the type of inputs that i want to check (text, password and text area, can put more if need)
+  const inputs = form.querySelectorAll('input[type="text"], input[type="password"], textarea');
+  let vuln = false;
+  let theresult = [];
+
+  for (const input of inputs) {
+    for (const payload of sqlpayloadlist) {
+      const originalValue = input.value;
+      input.value = payload;
+
+      try {
+        const response = await fetch(form.action, {
+          method: form.method,
+          body: new FormData(form),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        });
+
+        const responsetext = await response.text();
+
+        // Heuristic checker
+        if (
+          responsetext.includes("SQL syntax") ||
+          responsetext.includes("Unclosed quotation mark") ||
+          responsetext.includes("Unknown column")
+        ) {
+          vuln = true;
+          theresult.push({
+            input: input.name,
+            payload,
+            response: "SQL error detected"
+          });
+          break;
+        }
+      } catch (err) {
+        console.error(`Error testing input ${input.name}:`, err);
+      } finally {
+        input.value = originalValue; // Restore original value
+      }
+    }
+  }
+
+  return {
+    isVulnerable: vuln,
+    report: theresult
+  };
+}
 
 // Listen for scan requests
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
