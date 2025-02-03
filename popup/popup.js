@@ -25,12 +25,14 @@ document.getElementById("Scan").addEventListener("click", () => {
   // Query the active tab in the current window
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (tabs.length > 0) {
-      const [tab] = /*await*/ chrome.tabs.query({ active: true, currentWindow: true });
+      // const [tab] = /*await*/ chrome.tabs.query({ active: true, currentWindow: true });
+      const tab = tabs[0]; //using the first active tab
       const url = tab.url;
 
       // Execute a script in the context of the current tab
       chrome.scripting.executeScript({
-        target: { tabId: tabs[0].id },
+        // target: { tabId: tabs[0].id },
+        target:{tabId: tab.id},
         func: () => {
           function detectInput() {
             var input_emailfield = document.querySelectorAll('input[name="email"]');
@@ -63,6 +65,13 @@ document.getElementById("Scan").addEventListener("click", () => {
       //             <p><strong>Heuristic Check:</strong> ${response.heuristicCheck}</p>
       //         `;
       // });
+      (results) => {
+        if (chrome.runtime.lastError) {
+          console.error("Error executing script:", chrome.runtime.lastError.message);
+        } else {
+          console.log("Script executed successfully:", results);
+        }
+      }
     } else {
       console.error("No active tab found.");
     }

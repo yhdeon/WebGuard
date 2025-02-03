@@ -16,7 +16,8 @@
     "webRequest",
     "storage",
     "webRequestBlocking",
-    "cookies"
+    "cookies",
+    "tabs"
   ],
   "host_permissions":[
     "https://www.virustotal.com/api/v3/*",
