@@ -1,14 +1,29 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  <title>My Popup</title>
+  <title>WebGuard Security Dashboard</title>
   <link rel="stylesheet" href="popup.css">
 </head>
+
 <body>
-  <h1>WebGuard</h1>
-  <!-- <button id="changeColor">Change Background Color</button> -->
-  <button id="Scan">Scan</button>
-  <div id="result"></div>
+  <!-- WebGuard Section -->
+  <section>
+    <h1>WebGuard</h1>
+    <button id="Scan">Scan</button>
+    <div id="result"></div>
+  </section>
+
+  <hr> <!-- Divider between sections -->
+
+  <!-- Network & Session Check Section -->
+  <section>
+    <h1>Security Status</h1>
+    <div id="status"></div>
+  </section>
+
   <script src="popup.js"></script>
+
 </body>
+
 </html>

@@ -1,21 +1,38 @@
 {
-    "manifest_version": 3,
-    "name": "WebGuard",
-    "description": "A browser extension to safeguard your browsing experience.",
-    "version": "1.0",
-    "icons": {
-    },
-    "action": {
-      "default_popup": "popup/popup.html"
-    },
-    "permissions": ["activeTab", "scripting"],
-    "background": {
-      "service_worker": "background.js"
-    },
-    "content_scripts": [
-      {
-        "matches": ["https://*/*", "http://*/*"],
-        "js": ["content.js"]
-      }
-    ]
-  }
+  "manifest_version": 3,
+  "name": "WebGuard",
+  "description": "A browser extension to safeguard your browsing experience.",
+  "version": "1.0",
+  "icons": {},
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon":{
+      "48": "icons/cat.png"
+    }
+  },
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "webRequest",
+    "storage",
+    "webRequestBlocking",
+    "cookies"
+  ],
+  "host_permissions":[
+    "https://www.virustotal.com/api/v3/*",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        ["<all_urls>"]
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ]
+}

@@ -1,3 +1,25 @@
+document.addEventListener('DOMContentLoaded', function () {
+  const htmlOutput = document.getElementById('htmlOutput');
+
+  document.getElementById("status").innerText = "Monitoring Network Security...";
+
+  // Retrieve the VirusTotal result from storage
+  chrome.storage.local.get('virusTotalResult', (data) => {
+    if (data.virusTotalResult) {
+      const { url, isMalicious, stats } = data.virusTotalResult;
+      console.log(url);
+
+      if (isMalicious) {
+        htmlOutput.textContent = `Warning: The URL "${url}" is malicious!\n\n${JSON.stringify(stats, null, 2)}`;
+      } else {
+        htmlOutput.textContent = `The URL "${url}" is safe.\n\n${JSON.stringify(stats, null, 2)}`;
+      }
+    } else {
+      htmlOutput.textContent = "No URL has been checked yet.";
+    }
+  });
+});
+
 // test - detecting <input> fields for email and password
 document.getElementById("Scan").addEventListener("click", () => {
   // Query the active tab in the current window
@@ -35,12 +57,12 @@ document.getElementById("Scan").addEventListener("click", () => {
         },
       });
       //output result of url check - chris
-      chrome.runtime.sendMessage({ action: "scan", url }, (response) => {
-        const resultDiv = document.getElementById("result");
-        resultDiv.innerHTML = `
-                  <p><strong>Heuristic Check:</strong> ${response.heuristicCheck}</p>
-              `;
-      });
+      // chrome.runtime.sendMessage({ action: "scan", url }, (response) => {
+      //   const resultDiv = document.getElementById("result");
+      //   resultDiv.innerHTML = `
+      //             <p><strong>Heuristic Check:</strong> ${response.heuristicCheck}</p>
+      //         `;
+      // });
     } else {
       console.error("No active tab found.");
     }
