@@ -2,13 +2,31 @@
 console.log("Content script loaded!");
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message && message.url) {
-        // Show the confirmation dialog
-        const userConfirmed = confirm(`SITE IS MALICIOUS!!! Do you want to continue to: ${message.url}?`);
+  if (message && message.url) {
+      if (message.isMalicious) {
+          let userConfirmed = window.confirm(
+              `🚨 WARNING: The site "${message.url}" is flagged as malicious! 🚨\nDo you want to proceed?`
+          );
 
-        // Respond to the background script with the user's choice
-        sendResponse({ proceed: userConfirmed });
-    }
+          if (!userConfirmed) {
+              chrome.runtime.sendMessage({ action: "block", url: message.url });
+
+              // Log block action instead of modifying the page
+              console.log(`🚫 User refused to proceed. Blocking: ${message.url}`);
+
+              sendResponse({ proceed: false });
+          } else {
+              console.log(`✅ User chose to continue: ${message.url}`);
+              sendResponse({ proceed: true });
+          }
+      } else {
+          sendResponse({ proceed: true });
+      }
+  } else {
+      sendResponse({ proceed: true });
+  }
+
+  return true;
 });
 
 
