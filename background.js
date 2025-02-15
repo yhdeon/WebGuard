@@ -3,8 +3,9 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 // Add your VirusTotal API key here
-const API_KEY = "ADD-YOUR-API-KEY-HERE";
-let firstUrl = null;
+const API_KEY = "2383baf758f2bb5776fee29fa80a940e766c96296d701cd1c1f3d664fb275819";
+
+const urlVisited = [];
 
 const firstUrlPerTab = new Map();
 
@@ -68,7 +69,7 @@ function extractMainDomain(url) {
 
 // Function to check URL with VirusTotal
 async function checkUrlWithVirusTotal(url, tabId) {
-  console.log("Checking the following URL: ", url);
+  console.log("Checking the following URL with VirusTotal: ", url);
   const submitOption = {
     method: "POST",
     headers: {
@@ -152,33 +153,23 @@ async function checkUrlWithVirusTotal(url, tabId) {
 // Listen for web requests
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
-    const { tabId, url, frameId } = details;
+      const { tabId, url, frameId } = details;
 
-    // Only handle top-level navigations (frameId === 0 ensures it's the main frame)
-    if (frameId !== 0) return;
+      // Only handle top-level navigations (frameId === 0 ensures it's the main frame)
+      if (frameId !== 0) return;
 
-
-    if (url.startsWith("http://")) {
-      console.warn("Insecure connection detected:", url);
-    }
-
-    // Check if this is the first request for this tab
-    if (!firstUrlPerTab.has(tabId)) {
-      firstUrlPerTab.set(tabId, url); // Mark this tab's first URL
-      console.log("First URL for tab", tabId, ":", url);
-
-      // Extract the main domain
-      const mainDomain = extractMainDomain(url);
-      if (mainDomain) {
-        console.log("Main domain extracted: ", mainDomain);
-
-        // Check the URL with VirusTotal
-        checkUrlWithVirusTotal(mainDomain, tabId);
+      if (tabId != -1) {
+          processURL(details.url, tabId);
       }
-    }
   },
-  { urls: ["<all_urls>"] } // Monitor all URLs
+  { urls: ["<all_urls>"], types: ["main_frame"]} // Monitor all URLs
 );
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.url) {
+      processURL(changeInfo.url);
+  }
+});
 
 // Clean up when a tab is closed
 chrome.tabs.onRemoved.addListener((tabId) => {
@@ -186,26 +177,23 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   console.log("Tab closed, removed from tracking:", tabId);
 });
 
-chrome.webRequest.onBeforeRequest.addListener(
-  (details) => {
-    console.log("Getting first url");
-    // Capture the first URL
-    if (!firstUrl) {
-      firstUrl = details.url;
-      console.log("Intercepted URL: ", firstUrl);
+// Used to process the URLs entered before sending it to VirusTotal for checking.
+function processURL(url, tabId) {
 
-      // Extract the main domain
-      const mainDomain = extractMainDomain(firstUrl);
-      if (mainDomain) {
-        console.log("Main domain extracted: ", mainDomain);
+  const mainDomain = extractMainDomain(url);
+  if (!mainDomain || mainDomain == "newtab") return;
 
-        // Check the URL with VirusTotal
-        checkUrlWithVirusTotal(mainDomain);
-      }
-    }
-  },
-  { urls: ["<all_urls>"] } // Monitor all URLs
-);
+  console.log("Domain detected:", mainDomain);
+
+  if (urlVisited.includes(mainDomain)) {
+      console.log(`${mainDomain} was already visited.`);
+  }
+  else {
+      urlVisited.push(mainDomain);
+      console.log("Added to list:", mainDomain);
+      checkUrlWithVirusTotal(mainDomain, tabId);
+  }
+}
 
 // Monitor cookies sent to unknown domains
 chrome.cookies.onChanged.addListener(function (changeInfo) {
