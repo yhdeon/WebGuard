@@ -3,7 +3,7 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 // Add your VirusTotal API key here
-const API_KEY = "2383baf758f2bb5776fee29fa80a940e766c96296d701cd1c1f3d664fb275819";
+const API_KEY = "ADD-API-KEY-HERE";
 
 const urlVisited = [];
 
