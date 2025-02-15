@@ -102,4 +102,35 @@ document.addEventListener('DOMContentLoaded', function () {
           }
       });
   });
+    // Added a listener for the SQL function (URL VERSION)
+        document.getElementById("scanSQL").addEventListener("click", async () => {
+            let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+            if (tab) {
+                chrome.runtime.sendMessage({ action: "checkSQL", url: tab.url }, (response) => {
+                    displayResults(response, "SQL Injection");
+                });
+            }
+        });
+        function displayResults(result, scanType) {
+            let resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = `<h3>${scanType} Scan Results</h3>`;
+        
+            if (result.isVulnerable) {
+                resultDiv.innerHTML += `<p style="color: red;">Vulnerable Parameters Found!</p>`;
+                result.report.forEach(entry => {
+                    resultDiv.innerHTML += `<p><strong>Parameter:</strong> ${entry.parameter}<br>
+                                             <strong>Payload:</strong> ${entry.payload}<br>
+                                             <strong>Response:</strong> ${entry.response}</p>`;
+                });
+            } else {
+                resultDiv.innerHTML += `<p style="color: green;">No vulnerabilities detected.</p>`;
+            }
+        }
+
+
+
+
 });
+
+

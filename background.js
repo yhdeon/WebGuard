@@ -145,3 +145,91 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
 
     delete navigationStates[tabId];
 });
+
+
+// Chris 15/02/2024 SQL V2
+// Analyze a URL for vulnerable query parameters (meant for URL specifically)
+async function checkSQLInjection(url) {
+  const parsedUrl = new URL(url);
+  const params = parsedUrl.searchParams;
+  let vuln = false;
+  let theresult = [];
+  for (const [key, value] of params) {
+    for (const payload of sqlpayloadlist) {
+      const testUrl = `${parsedUrl.origin}${parsedUrl.pathname}?${key}=${encodeURIComponent(payload)}`;
+      console.log(`Testing: ${testUrl}`);
+      try {
+        const response = await fetch(testUrl);
+        const responsetext = await response.text();
+        // some heuristic checker thing
+        if (
+          responsetext.includes("SQL syntax") ||
+          responsetext.includes("Unclosed quotation mark") ||
+          responsetext.includes("Unknown column")
+        ) {
+          vuln = true;
+          theresult.push({
+            parameter: key,
+            payload,
+            response: "SQL error detected"
+          });
+          break;
+        }
+      } catch (err) {
+        console.error(`Error testing ${testUrl}:`, err);
+      }
+    }
+  }
+  return {
+    isVulnerable: vuln,
+    report: theresult
+  };
+}
+// Sql Injection scan tester for textboxes in the web form
+
+// Listen for scan requests
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+  if (message.action === "checkSQL") {
+    const result = await checkSQLInjection(message.url);
+    sendResponse(result);
+  }
+});
+
+// Analyze a URL for vulnerable query parameters
+async function checkXSS(url) {
+  const parsedUrl = new URL(url);
+  const params = parsedUrl.searchParams;
+  let vuln = false;
+  let detailedReport = [];
+  for (const [key, value] of params) {
+    for (const payload of xsspayloadlist) {
+      const testUrl = `${parsedUrl.origin}${parsedUrl.pathname}?${key}=${encodeURIComponent(payload)}`;
+      console.log(`Testing: ${testUrl}`);
+      try {
+        const response = await fetch(testUrl);
+        const responseText = await response.text();
+        // Heuristic: Look for XSS-related error messages
+        if (
+          responseText.includes("script") ||
+          responseText.includes("alert") ||
+          responseText.includes("onerror") ||
+          responseText.includes("onload")
+        ) {
+          vuln = true;
+          detailedReport.push({
+            parameter: key,
+            payload,
+            response: "XSS payload"
+          });
+          break;
+        }
+      } catch (err) {
+        console.error(`Error testing ${testUrl}:`, err);
+      }
+    }
+  }
+  return {
+    isVulnerable: vuln,
+    report: detailedReport
+  };
+}

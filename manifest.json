@@ -3,7 +3,7 @@
   "name": "Webguard",
   "version": "1.2",
   "description": "Intercepts navigation, scans with VirusTotal, and blocks malicious sites.",
-  "permissions": ["tabs", "scripting", "webNavigation", "storage", "alarms"],
+  "permissions": ["tabs", "scripting", "webNavigation", "storage", "alarms","activeTab"],
   "host_permissions": ["<all_urls>", "https://www.virustotal.com/api/v3/*"],
   "background": {
       "service_worker": "background.js"
