@@ -146,6 +146,78 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
     delete navigationStates[tabId];
 });
 
+// Monitor cookies sent to unknown domains
+chrome.cookies.onChanged.addListener(function (changeInfo) {
+  if (changeInfo.removed === false) {
+    console.log("Cookie set:", changeInfo.cookie);
+  }
+});
+
+chrome.webRequest.onBeforeSendHeaders.addListener(
+  function (details) {
+    const hasCSRF = details.requestHeaders.some(header =>
+      header.name.toLowerCase() === "x-csrf-token"
+    );
+
+    if (!hasCSRF) {
+      const message = `Possible CSRF vulnerability detected on: ${details.url}`;
+      
+      // Send a message to content.js to show the popup
+      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: "showSecurityPopup", message: message }, function (response) {
+          // Wait for the user response before proceeding with blocking the request
+          if (response && !response.userAllowed) {
+            console.log("User blocked the request due to missing CSRF token");
+            // Block the request if user denied
+            return { cancel: true };
+          }
+        });
+      });
+    }
+  },
+  { urls: ["<all_urls>"] },
+  ["requestHeaders"]
+);
+
+
+// Analyze a URL for vulnerable query parameters
+async function checkXSS(url) {
+  const parsedUrl = new URL(url);
+  const params = parsedUrl.searchParams;
+  let vuln = false;
+  let detailedReport = [];
+  for (const [key, value] of params) {
+    for (const payload of xsspayloadlist) {
+      const testUrl = `${parsedUrl.origin}${parsedUrl.pathname}?${key}=${encodeURIComponent(payload)}`;
+      console.log(`Testing: ${testUrl}`);
+      try {
+        const response = await fetch(testUrl);
+        const responseText = await response.text();
+        // Heuristic: Look for XSS-related error messages
+        if (
+          responseText.includes("script") ||
+          responseText.includes("alert") ||
+          responseText.includes("onerror") ||
+          responseText.includes("onload")
+        ) {
+          vuln = true;
+          detailedReport.push({
+            parameter: key,
+            payload,
+            response: "XSS payload"
+          });
+          break;
+        }
+      } catch (err) {
+        console.error(`Error testing ${testUrl}:`, err);
+      }
+    }
+  }
+  return {
+    isVulnerable: vuln,
+    report: detailedReport
+  };
+}
 
 // Chris 15/02/2024 SQL V2
 // Analyze a URL for vulnerable query parameters (meant for URL specifically)
