@@ -146,12 +146,47 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
     delete navigationStates[tabId];
 });
 
-// Monitor cookies sent to unknown domains
+
+
+//
+
 chrome.cookies.onChanged.addListener(function (changeInfo) {
-  if (changeInfo.removed === false) {
-    console.log("Cookie set:", changeInfo.cookie);
+  if (!changeInfo.removed) {
+    const cookie = changeInfo.cookie;
+
+    // Check if it's a session cookie (no expiration date)
+    const isSessionCookie = !cookie.expirationDate;
+
+    // Check security flags
+    const isSecure = cookie.secure;
+    const isHttpOnly = cookie.httpOnly;
+
+    // Warn if session cookie is insecure
+    if (isSessionCookie && (!isSecure || !isHttpOnly)) {
+      //console.warn("[SESSION ALERT] Insecure session cookie detected:", cookie);
+      const message = `[SESSION ALERT] Insecure session cookie detected: ${cookie}`;
+      
+      // Send a message to content.js to show the popup
+      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, { action: "showSecurityPopup", message: message }, function (response) {
+          // Wait for the user response before proceeding with blocking the request
+          if (response && !response.userAllowed) {
+            console.log("User blocked the request due to insecure cookie");
+            // Block the request if user denied
+            return { cancel: true };
+          }
+        });
+      });
+    }
+
+  
+
+    console.log("Cookie set:", cookie);
   }
 });
+
+
+//
 
 chrome.webRequest.onBeforeSendHeaders.addListener(
   function (details) {
