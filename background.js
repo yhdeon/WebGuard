@@ -209,7 +209,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 async function processURL(url, tabId) {
 
     const mainDomain = extractMainDomain(url);
-    if (!mainDomain || mainDomain == "newtab" || mainDomain == "devtools") return;
+    if (!mainDomain || mainDomain == "newtab" || mainDomain == "devtools" || mainDomain == "new-tab-page") return;
 
     console.log("Domain detected:", mainDomain);
 
