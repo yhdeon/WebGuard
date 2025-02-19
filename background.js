@@ -185,8 +185,6 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
         chrome.tabs.sendMessage(tabId, {
             url,
             isMalicious,
-            checkCSRF: true,
-            checkXSS: true
         });
     });
 
@@ -304,3 +302,219 @@ async function addURLToDB(url) {
         console.error('Error adding domain to DB: ', err);
     }
 }
+
+
+  chrome.webRequest.onBeforeSendHeaders.addListener(
+    async function (details) {
+      const excludedDomain = "virustotal.com";
+      const isExcludedDomain = details.url.includes(excludedDomain);
+      if (!isExcludedDomain){
+      const hasCSRF = details.requestHeaders.some(header =>
+        header.name.toLowerCase() === "x-csrf-token"
+      );
+  
+      if (!hasCSRF) {
+        const message = `🚨 Possible CSRF vulnerability detected on:\n${details.url}\n\nDo you want to proceed?`;
+  
+        // Query the active tab
+        let tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (tabs.length === 0) return;
+  
+        // Send message to content.js and wait for a response
+        let response = await new Promise((resolve) => {
+            chrome.tabs.sendMessage(tabs[0].id, { 
+                action: "showSecurityPopup", 
+                message: message, 
+                url: details.url 
+            }, resolve);
+        });
+  
+        // If user denies, block the request
+        if (response && response.userAllowed === false) {
+            let mainDomain = extractMainDomain(details.url); // Extract main domain like VirusTotal does
+            if (mainDomain) {
+                await blockSite(mainDomain, tabs[0].id); // Ensure it's added to blockedSites
+            }
+
+            return { cancel: true }; // 🚫 Block request
+        }
+      }
+    }
+else{
+    console.log("Skipping CSRF check for domain:", excludedDomain);
+}
+    },
+    { urls: ["<all_urls>"] },
+    ["requestHeaders"]
+  );
+
+
+  chrome.cookies.onChanged.addListener(function (changeInfo) {
+    if (!changeInfo.removed) {
+      const cookie = changeInfo.cookie;
+  
+      // Check if it's a session cookie (no expiration date)
+      const isSessionCookie = !cookie.expirationDate;
+  
+      // Check security flags
+      const isSecure = cookie.secure;
+      const isHttpOnly = cookie.httpOnly;
+  
+      // Warn if session cookie is insecure
+      if (isSessionCookie && (!isSecure || !isHttpOnly)) {
+        //console.warn("[SESSION ALERT] Insecure session cookie detected:", cookie);
+        const message = `[SESSION ALERT] Insecure session cookie detected: ${cookie}`;
+        
+        // Send a message to content.js to show the popup
+        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+          if (tabs.length === 0) return; // No active tabs found             
+          const tabUrl = tabs[0].url;  
+          chrome.tabs.sendMessage(tabs[0].id, { action: "showSecurityPopup", message: message, url: tabUrl }, function (response) {
+            // Wait for the user response before proceeding with blocking the request
+            if (response && !response.userAllowed) {
+                let mainDomain = extractMainDomain(tabUrl); // Extract main domain like VirusTotal does
+                if (mainDomain) {
+                  blockSite(mainDomain, tabs[0].id); // Ensure it's added to blockedSites
+                }
+              // Block the request if user denied
+              return { cancel: true };
+            }
+          });
+        });
+      }
+  
+    
+  
+      console.log("Cookie set:", cookie);
+    }
+  });
+
+
+
+// ✅ Function to check SQL Injection
+
+const sqlPayloadList = [
+    `' OR '1'='1`,
+    `" OR "1"="1`,
+    `' OR '1'='1' --`,
+    `" OR "1"="1" --`,
+    `admin' --`,
+    `' OR 1=1 --`,
+    `1' or '1' = '1`,
+    `') OR ('1'='1`,
+    `1; DROP TABLE users --`,
+    `1; SELECT * FROM information_schema.tables --`,
+    `' OR 'x'='x`,
+    `") OR ("x"="x`,
+    `' UNION SELECT NULL, NULL, NULL --`,
+    `' AND 1=CONVERT(int, (SELECT @@version)) --`,
+    `' AND (SELECT COUNT(*) FROM users) > 0 --`,
+    `' OR EXISTS(SELECT * FROM users WHERE username = 'admin') --`
+];
+
+async function checkSQLInjection(url) {
+    const parsedUrl = new URL(url);
+    const params = parsedUrl.searchParams;
+    let vuln = false;
+    let theresult = [];
+    for (const [key, value] of params) {
+      for (const payload of sqlpayloadlist) {
+        const testUrl = `${parsedUrl.origin}${parsedUrl.pathname}?${key}=${encodeURIComponent(payload)}`;
+        console.log(`Testing: ${testUrl}`);
+        try {
+          const response = await fetch(testUrl);
+          const responsetext = await response.text();
+          if (
+                    responsetext.includes("SQL syntax") ||
+                    responsetext.includes("Unclosed quotation mark") ||
+                    responsetext.includes("Unknown column") ||
+                    responsetext.includes("mysql_fetch") ||
+                    responsetext.includes("You have an error in your SQL syntax") ||
+                    responsetext.includes("Warning: mysql") ||
+                    responsetext.includes("ODBC SQL Server Driver") ||
+                    responsetext.match(/column .* does not exist/i)
+          ) {
+            vuln = true;
+            theresult.push({
+              parameter: key,
+              payload,
+              response: "SQL error detected"
+            });
+            break;
+          }
+        } catch (err) {
+          console.error(`Error testing ${testUrl}:`, err);
+        }
+      }
+    }
+    return {
+      isVulnerable: vuln,
+      report: theresult
+    };
+}
+
+// ✅ Handle messages from popup.js
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+    if (message.action === "checkSQL") {
+        const result = await checkSQLInjection(message.url);
+        sendResponse(result);
+    }
+});
+  
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+    if (message.action === "checkXSS") {
+        const url = message.url;
+
+        if (!url.includes("?")) {
+            sendResponse({ isVulnerable: false, report: [] });
+            return;
+        }
+
+        console.log(`Checking XSS for URL: ${url}`);
+
+        const xssPayloadList = [
+            `<script>alert('XSS')</script>`,
+            `"><script>alert('XSS')</script>`,
+            `' onmouseover='alert("XSS")'`,
+            `javascript:alert('XSS')`,
+            `<img src="x" onerror="alert('XSS')">`
+        ];
+
+        const parsedUrl = new URL(url);
+        const params = parsedUrl.searchParams;
+        let vuln = false;
+        let detailedReport = [];
+
+        for (const [key, value] of params) {
+            for (const payload of xssPayloadList) {
+                const testUrl = `${parsedUrl.origin}${parsedUrl.pathname}?${key}=${encodeURIComponent(payload)}`;
+                console.log(`Testing: ${testUrl}`);
+                
+                try {
+                    const response = await fetch(testUrl);
+                    const responseText = await response.text();
+
+                    if (
+                        responseText.includes("script") ||
+                        responseText.includes("alert") ||
+                        responseText.includes("onerror") ||
+                        responseText.includes("onload")
+                    ) {
+                        vuln = true;
+                        detailedReport.push({
+                            parameter: key,
+                            payload,
+                            response: "Possible XSS vulnerability"
+                        });
+                        break;
+                    }
+                } catch (err) {
+                    console.error(`Error testing ${testUrl}:`, err);
+                }
+            }
+        }
+
+        sendResponse({ isVulnerable: vuln, report: detailedReport });
+    }
+    return true; // Required for async response
+});

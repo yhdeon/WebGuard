@@ -8,7 +8,10 @@
         "webNavigation",
         "storage",
         "alarms",
-        "declarativeNetRequest"
+        "declarativeNetRequest",
+        "activeTab",
+        "cookies",
+        "webRequest"
     ],
     "host_permissions": ["<all_urls>", "https://www.virustotal.com/api/v3/*"],
     "background": {
