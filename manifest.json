@@ -1,17 +1,48 @@
 {
-  "manifest_version": 3,
-  "name": "Webguard",
-  "version": "1.2",
-  "description": "Intercepts navigation, scans with VirusTotal, and blocks malicious sites.",
-  "permissions": ["tabs", "scripting", "webNavigation", "storage", "alarms", "activeTab","cookies","webRequest"],
-  "host_permissions": ["<all_urls>", "https://www.virustotal.com/api/v3/*"],
-  "background": {
-      "service_worker": "background.js"
-  },
-  "content_scripts": [
+    "manifest_version": 3,
+    "name": "WebGuard",
+    "version": "1.1.1",
+    "permissions": [
+      "tabs",
+      "scripting",
+      "webNavigation",
+      "storage",
+      "alarms",
+      "declarativeNetRequest",
+      "activeTab",
+      "cookies",
+      "downloads",
+      "downloads.shelf",
+      "webRequest",
+      "webRequestBlocking"
+    ],
+    "host_permissions": ["<all_urls>", "https://www.virustotal.com/api/v3/*"],
+    "background": {
+      "service_worker": "background.js",
+      "type": "module"
+    },
+    "icons": {
+    "16": "icons/webGuard.png",
+    "48": "icons/webGuard.png",
+    "128": "icons/webGuard.png"
+    },
+    "action": {
+      "default_popup": "popup/popup.html"
+    },
+    "content_scripts": [
       {
-          "matches": ["<all_urls>"],
-          "js": ["content.js"]
+        "matches": ["<all_urls>"],
+        "js": ["content.js"]
       }
-  ]
-}
+    ],
+    "declarative_net_request": {
+      "rule_resources": [
+        {
+          "id": "blockRules",
+          "enabled": true,
+          "path": "rules.json"
+        }
+      ]
+    }
+  }
+  
