@@ -80,8 +80,8 @@ chrome.webNavigation.onCommitted.addListener(async (details) => {
 // ---------------------- CSRF Check via onBeforeSendHeaders ----------------------
 chrome.webRequest.onBeforeSendHeaders.addListener(
   function (details) {
-    const excludedDomain = "virustotal.com";
-    console.log("in csrf func")
+    //if (flag) -- chris part
+    const excludedDomain = "virustotal.com"; //exclude virustotal as that is used for checking if url is safe
     if (details.url.includes(excludedDomain)) return;
     if (["POST", "PUT", "DELETE"].includes(details.method)) {
       const hasCSRF = details.requestHeaders.some(header =>
@@ -90,7 +90,6 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
 
     if (!hasCSRF && details.tabId >= 0) {
       // store warning msg
-      console.log("got csrf");
       console.log(`Site ${details.url} .`);
       pendingCsrfWarnings[details.tabId] = `Possible CSRF vulnerability detected on: ${details.url}`;
     }
@@ -112,7 +111,7 @@ chrome.cookies.onChanged.addListener(function (changeInfo) {
     const isSecure = cookie.secure;
     const isHttpOnly = cookie.httpOnly;
     console.log("inside cookie onChanged.");
-    // if session cookie is insecure
+    // check if session cookie is insecure
     if (isSessionCookie && (!isSecure || !isHttpOnly)) {
       console.log("insecure session detected.");
       const warningMessage = `[SESSION ALERT] Insecure session cookie detected: ${JSON.stringify(cookie)}`;
@@ -121,7 +120,7 @@ chrome.cookies.onChanged.addListener(function (changeInfo) {
         if (tabs.length === 0) return;
         const activeTabId = tabs[0].id;
         const tabUrl = tabs[0].url;
-        // immediately inject the inline function to show the popup
+        // show the popup
         chrome.scripting.executeScript({
           target: { tabId: activeTabId },
           func: (warning, url) => {
