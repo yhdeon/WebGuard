@@ -37,19 +37,19 @@ function monitorDOMForSecurity() {
     mutations.forEach((mutation) => {
       mutation.addedNodes.forEach((node) => {
         if (node.nodeType === Node.ELEMENT_NODE) {
-          // Detect injected scripts (XSS)
+          // check inline scripts
           if (node.tagName === "SCRIPT") {
             const message = `[XSS Alert] Suspicious script added: ${node.src || node.outerHTML}`;
             addAggregatedWarning(message);
           }
 
-          // Detect inline event handlers (XSS)
+          // check inline events
           if (node.outerHTML.includes("onerror") || node.outerHTML.includes("onload")) {
             const message = `[XSS Alert] Suspicious event-based script detected: ${node.outerHTML}`;
             addAggregatedWarning(message);
           }
 
-          // Detect auto-submitting forms (CSRF)
+          // check auto submit form
           if (node.tagName === "FORM" && node.hasAttribute("action")) {
             if (node.hasAttribute("autofill") || node.outerHTML.includes("onsubmit")) {
               const message = `[CSRF Alert] Suspicious form submission detected: ${node.outerHTML}`;
@@ -62,7 +62,7 @@ function monitorDOMForSecurity() {
             }
           }
 
-          // Detect suspicious hidden iframe/image requests (CSRF)
+          // check hidden iframe/image requests 
           if (node.tagName === "IFRAME" || node.tagName === "IMG") {
             if (node.src && !node.src.startsWith(window.location.origin)) {
               const message = `[CSRF Alert] Suspicious external request via iframe/img: ${node.src}`;
@@ -81,7 +81,6 @@ function monitorDOMForSecurity() {
 
 window.addEventListener("load", () => {
   monitorDOMForSecurity();
-  // add the trigger here
   detectInput();
   detectPwdInput();
 });
