@@ -1,7 +1,7 @@
 export async function checkURLWithDB(url) {
   console.log(`Checking ${url} with DB`);
   try {
-    const response = await fetch(`http://20.2.161.111:4000/check?url=${url}`);
+    const response = await fetch(`http://52.229.164.233:4000/check?url=${url}`);
     const data = await response.json();
     if (!data.stored) {
       console.log('Site not found in DB');
@@ -19,7 +19,7 @@ export async function checkURLWithDB(url) {
 export async function addURLToDB(url) {
   console.log(`Adding ${url} to DB`);
   try {
-    const insertResponse = await fetch('http://20.2.161.111:4000/add', {
+    const insertResponse = await fetch('http://52.229.164.233:4000/add', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: url })

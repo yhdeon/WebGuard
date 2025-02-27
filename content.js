@@ -113,8 +113,8 @@ function detectInput() {
   
   
   
-  //const usernameFields = document.querySelectorAll('input[type="text"], input[name="username"]');
-  const usernameFields = document.querySelectorAll('input[type="text"]');
+  const usernameFields = document.querySelectorAll('input[name="id"]');
+  // const usernameFields = document.querySelectorAll('input[type="text"]');
   if (usernameFields.length > 0) {
       console.log("Username input field detected.");
       console.log("No. of username fields: " + usernameFields.length);

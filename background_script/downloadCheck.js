@@ -85,7 +85,6 @@ export async function checkFileHashWithVirusTotal(fileHash, apikey){
 //analyze file using JSZip
 export async function analyzeZipFile(fileBlob){
     //create instance of JSZip
-    
     const zip = new JSZip();
     try{
         //load zip file
@@ -159,10 +158,12 @@ export async function analyzeZipFile(fileBlob){
 export async function saveFile(fileBlob, filename){
     try{
         //create object URL from the file blob
+        // use reader to read the file blob as data URL
         const reader = new FileReader();
         // const blobURL = URL.createObjectURL(fileBlob);
         reader.onload = function(){
             const blobURL = reader.result;
+            //trigger the download
             chrome.downloads.download({
                 url: blobURL,
                 filename: filename,

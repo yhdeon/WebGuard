@@ -16,7 +16,7 @@ import * as JSZip from './libs/jszip.min.js';
 chrome.alarms.create("clearExpiredSutes", { periodInMinutes: 1 });
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === "clearExpiredSutes") {
-    console.log("⏳ Checking for expired blocked sites...");
+    console.log("Checking for expired blocked sites...");
     clearExpiredBlockedSites();
     clearExpiredWhitelistedSites();
   }
@@ -89,10 +89,10 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
       );
 
     if (!hasCSRF && details.tabId >= 0) {
-      // Store the warning message for later aggregation
+      // store warning msg
       console.log("got csrf");
-      console.log(`✅ Site ${details.url} .`);
-      pendingCsrfWarnings[details.tabId] = `🚨 Possible CSRF vulnerability detected on: ${details.url}`;
+      console.log(`Site ${details.url} .`);
+      pendingCsrfWarnings[details.tabId] = `Possible CSRF vulnerability detected on: ${details.url}`;
     }
     return;
   }
@@ -106,26 +106,26 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
 chrome.cookies.onChanged.addListener(function (changeInfo) {
   if (!changeInfo.removed) {
     const cookie = changeInfo.cookie;
-    // Check if it's a session cookie (no expiration date)
+    // check if it's a session cookie
     const isSessionCookie = !cookie.expirationDate;
-    // Check security flags
+    // check security flags
     const isSecure = cookie.secure;
     const isHttpOnly = cookie.httpOnly;
     console.log("inside cookie onChanged.");
-    // If session cookie is insecure, immediately trigger the inline popup
+    // if session cookie is insecure
     if (isSessionCookie && (!isSecure || !isHttpOnly)) {
       console.log("insecure session detected.");
       const warningMessage = `[SESSION ALERT] Insecure session cookie detected: ${JSON.stringify(cookie)}`;
-      // Query for the active tab to get its id and URL
+      // get id url
       chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         if (tabs.length === 0) return;
         const activeTabId = tabs[0].id;
         const tabUrl = tabs[0].url;
-        // Immediately inject the inline function to show the popup
+        // immediately inject the inline function to show the popup
         chrome.scripting.executeScript({
           target: { tabId: activeTabId },
           func: (warning, url) => {
-            // Combine the warning with a prompt message
+            // combine the warning with a prompt message
             const message = warning + "\n\nDo you want to proceed?";
             const userConfirmed = window.confirm(message);
             if (!userConfirmed) {
@@ -157,23 +157,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// ---- deon test --- 
+// "sandbox" download check 
 const processedDownloads = new Set();
+// a set is used to keep track of processed downloads to avoid duplicate processing
 
 chrome.downloads.onCreated.addListener(async (downloadItem) => {
     console.log("Download started with ID:", downloadItem.id, "URL:", downloadItem.url);
     try{
+        //check download by downloadItem.id
         if(processedDownloads.has(downloadItem.id)){
             console.log("Download already processed. Skipping...");
             return;
         }
+        //add the downloadItem.id to the set
         processedDownloads.add(downloadItem.id);
 
         console.log("Download started:", downloadItem);
-        //intercepting specific file type
+        //intercepting specific file type - we use zip for now
         if(downloadItem.url && downloadItem.url.endsWith(".zip")) {
             console.log(`zip file detected, perform checking ${downloadItem.url}`);
-
+            //pause the download for analysis
             chrome.downloads.pause(downloadItem.id, async () => {
                 if (chrome.runtime.lastError) {
                     console.error("Error pausing download:", chrome.runtime.lastError);
@@ -183,6 +186,7 @@ chrome.downloads.onCreated.addListener(async (downloadItem) => {
             
                 try{
                     //fetch the zip file user trying to download for analysis temporarily
+                    // file is blob form in fetchFile()
                     const fileBlob = await fetchFile(downloadItem.url);
 
                     if (!fileBlob) {
@@ -194,14 +198,17 @@ chrome.downloads.onCreated.addListener(async (downloadItem) => {
                     // analyze the zip file
                     // const fileIsSafe = await analyzeZipFile(fileBlob);
                     const {safe: fileIsSafe, filename} = await analyzeZipFile(fileBlob);
+                    //analyzeZipFile will check with virustotal function for file hash
                     if(fileIsSafe){
                         //save the file once deemed safe
                         console.log("File is safe, file will be saved....");
                         console.log("the file name is: ", filename);
                         // Cancel the paused original download to prevent conflicts
                         await new Promise((resolve) =>
+                            //this is to cancel duplicate download due to pause
                             chrome.downloads.cancel(downloadItem.id, resolve)
                         );
+                        //save the file to user disk once is deemed safe
                         await saveFile(fileBlob, filename);
                     }else{
                         console.log("File is not safe, download will be cancelled....");
@@ -220,17 +227,17 @@ chrome.downloads.onCreated.addListener(async (downloadItem) => {
 
 // ----------------SQL & XSS check-------------------------------------
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "checkSQL") {
-    checkSQLInjection(message.url).then(result => sendResponse(result));
-    return true;  
-  }
+// chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+//   if (message.action === "checkSQL") {
+//     checkSQLInjection(message.url).then(result => sendResponse(result));
+//     return true;  
+//   }
 
-  if (message.action === "checkXSS") {
-    checkXSS(message.url).then(result => sendResponse(result));
-    return true;  
-  }
-});
+//   if (message.action === "checkXSS") {
+//     checkXSS(message.url).then(result => sendResponse(result));
+//     return true;  
+//   }
+// });
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.action === "checkXSS") {
