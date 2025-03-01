@@ -31,45 +31,50 @@ function addAggregatedWarning(warning) {
 }
 
 // ---------------------- DOM Check ----------------------
-
+let CSRFFlag = true;
 function monitorDOMForSecurity() {
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       mutation.addedNodes.forEach((node) => {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          // Detect injected scripts (XSS)
-          if (node.tagName === "SCRIPT") {
-            const message = `[XSS Alert] Suspicious script added: ${node.src || node.outerHTML}`;
-            addAggregatedWarning(message);
-          }
-
-          // Detect inline event handlers (XSS)
-          if (node.outerHTML.includes("onerror") || node.outerHTML.includes("onload")) {
-            const message = `[XSS Alert] Suspicious event-based script detected: ${node.outerHTML}`;
-            addAggregatedWarning(message);
-          }
-
-          // Detect auto-submitting forms (CSRF)
-          if (node.tagName === "FORM" && node.hasAttribute("action")) {
-            if (node.hasAttribute("autofill") || node.outerHTML.includes("onsubmit")) {
-              const message = `[CSRF Alert] Suspicious form submission detected: ${node.outerHTML}`;
+        if (CSRFFlag = true){
+          
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            // Detect injected scripts (XSS)
+            if (node.tagName === "SCRIPT") {
+              const message = `[XSS Alert] Suspicious script added: ${node.src || node.outerHTML}`;
               addAggregatedWarning(message);
             }
-            const formAction = node.action;
-            if (!formAction.startsWith(window.location.origin)){
-              const message = `[CSRF Alert] Suspicious form submission detected: ${node.outerHTML}`;
+  
+            // Detect inline event handlers (XSS)
+            if (node.outerHTML.includes("onerror") || node.outerHTML.includes("onload")) {
+              const message = `[XSS Alert] Suspicious event-based script detected: ${node.outerHTML}`;
               addAggregatedWarning(message);
+            }
+  
+            // Detect auto-submitting forms (CSRF)
+            if (node.tagName === "FORM" && node.hasAttribute("action")) {
+              if (node.hasAttribute("autofill") || node.outerHTML.includes("onsubmit")) {
+                const message = `[CSRF Alert] Suspicious form submission detected: ${node.outerHTML}`;
+                addAggregatedWarning(message);
+              }
+              const formAction = node.action;
+              if (!formAction.startsWith(window.location.origin)){
+                const message = `[CSRF Alert] Suspicious form submission detected: ${node.outerHTML}`;
+                addAggregatedWarning(message);
+              }
+            }
+  
+            // Detect suspicious hidden iframe/image requests (CSRF)
+            if (node.tagName === "IFRAME" || node.tagName === "IMG") {
+              if (node.src && !node.src.startsWith(window.location.origin)) {
+                const message = `[CSRF Alert] Suspicious external request via iframe/img: ${node.src}`;
+                addAggregatedWarning(message);
+              }
             }
           }
 
-          // Detect suspicious hidden iframe/image requests (CSRF)
-          if (node.tagName === "IFRAME" || node.tagName === "IMG") {
-            if (node.src && !node.src.startsWith(window.location.origin)) {
-              const message = `[CSRF Alert] Suspicious external request via iframe/img: ${node.src}`;
-              addAggregatedWarning(message);
-            }
-          }
         }
+        
       });
     });
   });
@@ -90,6 +95,7 @@ window.addEventListener("load", () => {
 
 const url = window.location.href;
 let SQLWarning = [];
+
 
 function detectInput() {
   const sqlPayloadList = [
@@ -114,7 +120,7 @@ function detectInput() {
   
   
   const usernameFields = document.querySelectorAll('input[name="id"]');
-  // const usernameFields = document.querySelectorAll('input[type="text"]');
+  // const usernameFields = document.querySelectorAll('input[type="text"]'); // For ALL textboxes (not recommended)
   if (usernameFields.length > 0) {
       console.log("Username input field detected.");
       console.log("No. of username fields: " + usernameFields.length);
@@ -163,8 +169,7 @@ function detectInput() {
               fetch(actionURL, fetchOptions)
                   .then(response => response.text())
                   .then(text => {
-                      //console.log("SQL Injection Test Response:", text);
-                     //console.log("Am here");
+                      
                       if (
                         text.includes("SQL syntax error") || 
                         text.includes("unclosed quotation mark") || 
@@ -196,9 +201,7 @@ function detectInput() {
                       ) {
                         
                           message = ` High confidence: Website is vulnerable to SQL Injection! Payload: ${payload}`;
-                          //addAggregatedWarning(message);
-                          //SQLWarning.push(message);
-                          //addAggregatedWarning(message);
+                      
                           
                           //stop the loop
                           tocontinue = false;
@@ -206,10 +209,10 @@ function detectInput() {
                           console.log(SQLWarning);
                          displayWarningPopup([message], window.location.href);
                          //displayWarningPopup([message], window.location.href);
-                        
+                          CSRFFlag = false; // set flag so that CSRF doesnt trigger after this event
                       }
                       else{
-                        //console.log("Am here now test.");
+                       
                       }
                       
                       
