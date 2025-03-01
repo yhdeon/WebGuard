@@ -82,20 +82,24 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
   function (details) {
     const excludedDomain = "virustotal.com";
     console.log("in csrf func")
-    if (details.url.includes(excludedDomain)) return;
-    if (["POST", "PUT", "DELETE"].includes(details.method)) {
-      const hasCSRF = details.requestHeaders.some(header =>
-          ["x-csrf-token", "x-requested-with"].includes(header.name.toLowerCase())
-      );
-
-    if (!hasCSRF && details.tabId >= 0) {
-      // store warning msg
-      console.log("got csrf");
-      console.log(`Site ${details.url} .`);
-      pendingCsrfWarnings[details.tabId] = `Possible CSRF vulnerability detected on: ${details.url}`;
+    let CSRFFlag = checkCSRFflag();
+    if (CSRFFlag === true) {
+      if (details.url.includes(excludedDomain)) return;
+      if (["POST", "PUT", "DELETE"].includes(details.method)) {
+        const hasCSRF = details.requestHeaders.some(header =>
+            ["x-csrf-token", "x-requested-with"].includes(header.name.toLowerCase())
+        );
+  
+      if (!hasCSRF && details.tabId >= 0) {
+        // store warning msg
+        console.log("got csrf");
+        console.log(`Site ${details.url} .`);
+        pendingCsrfWarnings[details.tabId] = `Possible CSRF vulnerability detected on: ${details.url}`;
+      }
+      return;
+      }
     }
-    return;
-  }
+    
   },
   { urls: ["<all_urls>"] },
   ["requestHeaders"]

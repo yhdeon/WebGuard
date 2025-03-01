@@ -93,6 +93,10 @@ window.addEventListener("load", () => {
 
 // ---------------------- SQL XSS Check ----------------------
 
+function checkCSRFflag(){
+  return CSRFFlag;
+}
+
 const url = window.location.href;
 let SQLWarning = [];
 
@@ -209,7 +213,7 @@ function detectInput() {
                           console.log(SQLWarning);
                          displayWarningPopup([message], window.location.href);
                          //displayWarningPopup([message], window.location.href);
-                          CSRFFlag = false; // set flag so that CSRF doesnt trigger after this event
+                           // set flag so that CSRF doesnt trigger after this event
                       }
                       else{
                        
@@ -225,7 +229,7 @@ function detectInput() {
         }
 
 
-
+        CSRFFlag = false;
 
       }; 
       
