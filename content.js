@@ -93,7 +93,7 @@ window.addEventListener("load", () => {
 
 // ---------------------- SQL XSS Check ----------------------
 
-function checkCSRFflag(){
+export async function checkCSRFflag(){
   return CSRFFlag;
 }
 

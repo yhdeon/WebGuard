@@ -7,6 +7,7 @@ import { clearExpiredWhitelistedSites, addTemporaryWhitelist, isTemporarilyWhite
 import { checkMalicious, checkCsrf, checkSessionCookie, runAllSecurityChecks, pendingCsrfWarnings} from './background_script/initialSecurityCheck.js';
 import { checkURLWithDB, addURLToDB} from './background_script/whitelistDatabase.js';
 import { fetchFile, checkFileHashWithVirusTotal, analyzeZipFile, saveFile} from './background_script/downloadCheck.js';
+import { checkCSRFflag } from './content.js';
 import * as JSZip from './libs/jszip.min.js';
 // import {checkSQLInjection} from './background_script/SQLICheck.js'
 // import { extractMainDomain } from './extraMainURL.js';
@@ -82,7 +83,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
   function (details) {
     const excludedDomain = "virustotal.com";
     console.log("in csrf func")
-    let CSRFFlag = checkCSRFflag();
+    CSRFFlag = checkCSRFflag();
     if (CSRFFlag === true) {
       if (details.url.includes(excludedDomain)) return;
       if (["POST", "PUT", "DELETE"].includes(details.method)) {
@@ -91,10 +92,30 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
         );
   
       if (!hasCSRF && details.tabId >= 0) {
-        // store warning msg
-        console.log("got csrf");
-        console.log(`Site ${details.url} .`);
-        pendingCsrfWarnings[details.tabId] = `Possible CSRF vulnerability detected on: ${details.url}`;
+        console.log("csrf vulnerability detected.");
+      const warningMessage = `[CSRF ALERT] CSRF vulnerability detected: ${url.detail}`;
+      // get id url
+      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        if (tabs.length === 0) return;
+        const activeTabId = tabs[0].id;
+        const tabUrl = tabs[0].url;
+        // immediately inject the inline function to show the popup
+        chrome.scripting.executeScript({
+          target: { tabId: activeTabId },
+          func: (warning, url) => {
+            // combine the warning with a prompt message
+            const message = warning + "\n\nDo you want to proceed?";
+            const userConfirmed = window.confirm(message);
+            if (!userConfirmed) {
+              chrome.runtime.sendMessage({ action: "block", url: url });
+              chrome.runtime.sendMessage({ action: "closeTab" });
+            } else {
+              console.log(`User chose to proceed with ${url}`);
+            }
+          },
+          args: [warningMessage, tabUrl]
+        });
+      });
       }
       return;
       }

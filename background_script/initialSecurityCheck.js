@@ -16,14 +16,14 @@ export async function checkMalicious(url) {
 
 
 // CSRF check that uses the warning stored from onBeforeSendHeaders
-export async function checkCsrf(url, tabId) {
-  if (pendingCsrfWarnings[tabId]) {
-    const warning = pendingCsrfWarnings[tabId];
-    delete pendingCsrfWarnings[tabId];
-    return warning;
-  }
-  return "";
-}
+// export async function checkCsrf(url, tabId) {
+//   if (pendingCsrfWarnings[tabId]) {
+//     const warning = pendingCsrfWarnings[tabId];
+//     delete pendingCsrfWarnings[tabId];
+//     return warning;
+//   }
+//   return "";
+// }
 
 // Session cookie check that uses the warning stored from chrome.cookies.onChanged
 export async function checkSessionCookie(url, tabId) {
@@ -40,7 +40,7 @@ export async function runAllSecurityChecks(url, tabId) {
   // If not whitelisted (or an error occurred), run the additional security checks concurrently.
   const results = await Promise.all([
     checkMalicious(url),
-    checkCsrf(url, tabId),
+    //checkCsrf(url, tabId),
     //checkSessionCookie(url, tabId)
     // Add additional checks here as needed.
   ]);
