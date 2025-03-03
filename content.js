@@ -93,9 +93,7 @@ window.addEventListener("load", () => {
 
 // ---------------------- SQL XSS Check ----------------------
 
-export async function checkCSRFflag(){
-  return CSRFFlag;
-}
+
 
 const url = window.location.href;
 let SQLWarning = [];
@@ -123,7 +121,8 @@ function detectInput() {
   
   
   
-  const usernameFields = document.querySelectorAll('input[name="id"]');
+  //const usernameFields = document.querySelectorAll('input[name="id"]');
+  const usernameFields = document.querySelectorAll('input[name="email"]');
   // const usernameFields = document.querySelectorAll('input[type="text"]'); // For ALL textboxes (not recommended)
   if (usernameFields.length > 0) {
       console.log("Username input field detected.");
@@ -255,38 +254,22 @@ function detectPwdInput() {
 // Run the detection functions
 
 // run the xss and sql injection detection functions (URL MODE)
-chrome.runtime.sendMessage({ action: "checkSQL", url: url }, (response) => {
-  if (chrome.runtime.lastError) {
-      console.error("Error sending message:", chrome.runtime.lastError.message);
-  } else if (response) {
-      if (response.vulnerable) {
-         
-          //htmlOutput.textContent = ` WARNING: This site might be vulnerable to SQL Injection!\n\n${JSON.stringify(response.report, null, 2)}`;
-          const message = ` WARNING: This site might be vulnerable to SQL Injection! ${node.outerHTML}`;
-          addAggregatedWarning(message);
-      } else {
-          console.log("No SQL Injection Vulnerabilities detected.");
-         
-          
-          //htmlOutput.textContent = ` No SQL Injection Vulnerabilities detected.\n\n${JSON.stringify(stats, null, 2)}`;
-      }
-  }
-});
 
-// Send message to check for XSS vulnerabilities
-chrome.runtime.sendMessage({ action: "checkXSS", url: url }, (response) => {
-  if (chrome.runtime.lastError) {
-      console.error("Error sending XSS request:", chrome.runtime.lastError.message);
-  } else if (response) {
-      if (response.isVulnerable) {
+
+// // Send message to check for XSS vulnerabilities
+// chrome.runtime.sendMessage({ action: "checkXSS", url: url }, (response) => {
+//   if (chrome.runtime.lastError) {
+//       console.error("Error sending XSS request:", chrome.runtime.lastError.message);
+//   } else if (response) {
+//       if (response.isVulnerable) {
           
-          //htmlOutput.textContent = ` WARNING: This site might be vulnerable to XSS!\n\n${JSON.stringify(stats, null, 2)}`;
-          const message = `  WARNING: This site might be vulnerable to XSS! ${node.outerHTML}`;
-          addAggregatedWarning(message);
-      } else {
-          console.log("No XSS Vulnerabilities detected.");
-          //htmlOutput.textContent = ` No XSS Vulnerabilities detected.\n\n${JSON.stringify(stats, null, 2)}`;
-      }
-  }
-});
+//           //htmlOutput.textContent = ` WARNING: This site might be vulnerable to XSS!\n\n${JSON.stringify(stats, null, 2)}`;
+//           const message = `  WARNING: This site might be vulnerable to XSS! ${node.outerHTML}`;
+//           addAggregatedWarning(message);
+//       } else {
+//           console.log("No XSS Vulnerabilities detected.");
+//           //htmlOutput.textContent = ` No XSS Vulnerabilities detected.\n\n${JSON.stringify(stats, null, 2)}`;
+//       }
+//   }
+// });
 

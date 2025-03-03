@@ -7,7 +7,7 @@ import { clearExpiredWhitelistedSites, addTemporaryWhitelist, isTemporarilyWhite
 import { checkMalicious, checkCsrf, checkSessionCookie, runAllSecurityChecks, pendingCsrfWarnings} from './background_script/initialSecurityCheck.js';
 import { checkURLWithDB, addURLToDB} from './background_script/whitelistDatabase.js';
 import { fetchFile, checkFileHashWithVirusTotal, analyzeZipFile, saveFile} from './background_script/downloadCheck.js';
-import { checkCSRFflag } from './content.js';
+
 import * as JSZip from './libs/jszip.min.js';
 // import {checkSQLInjection} from './background_script/SQLICheck.js'
 // import { extractMainDomain } from './extraMainURL.js';
@@ -83,8 +83,8 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
   function (details) {
     const excludedDomain = "virustotal.com";
     console.log("in csrf func")
-    CSRFFlag = checkCSRFflag();
-    if (CSRFFlag === true) {
+    
+    
       if (details.url.includes(excludedDomain)) return;
       if (["POST", "PUT", "DELETE"].includes(details.method)) {
         const hasCSRF = details.requestHeaders.some(header =>
@@ -119,7 +119,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
       }
       return;
       }
-    }
+    
     
   },
   { urls: ["<all_urls>"] },
@@ -252,22 +252,11 @@ chrome.downloads.onCreated.addListener(async (downloadItem) => {
 
 // ----------------SQL & XSS check-------------------------------------
 
-// chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-//   if (message.action === "checkSQL") {
-//     checkSQLInjection(message.url).then(result => sendResponse(result));
-//     return true;  
-//   }
-
-//   if (message.action === "checkXSS") {
-//     checkXSS(message.url).then(result => sendResponse(result));
-//     return true;  
-//   }
-// });
-
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.action === "checkXSS") {
       const url = message.url;
 
+      
       if (!url.includes("?")) {
           sendResponse({ isVulnerable: false, report: [] });
           return;
