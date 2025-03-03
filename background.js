@@ -85,17 +85,16 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
   function (details) {
     const excludedDomain = "virustotal.com";
     console.log("in csrf func")
-    
-    
-      if (details.url.includes(excludedDomain)) return;
-      if (["POST", "PUT", "DELETE"].includes(details.method)) {
-        const hasCSRF = details.requestHeaders.some(header =>
-            ["x-csrf-token", "x-requested-with"].includes(header.name.toLowerCase())
-        );
-  
-      if (!hasCSRF && details.tabId >= 0) {
-        console.log("csrf vulnerability detected.");
-      const warningMessage = `[CSRF ALERT] CSRF vulnerability detected: ${url.detail}`;
+    if (details.url.includes(excludedDomain)) return;
+    if (["POST", "PUT", "DELETE"].includes(details.method)) {
+      const hasCSRF = details.requestHeaders.some(header =>
+          ["x-csrf-token", "x-requested-with"].includes(header.name.toLowerCase())
+      );
+
+    if (!hasCSRF && details.tabId >= 0) {
+      console.log("got csrf");
+      console.log(`Site ${details.url} .`);
+      const warningMessage = `[CSRF ALERT] Insecure CSRF detected: ${details.url}`;
       // get id url
       chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         if (tabs.length === 0) return;
@@ -118,11 +117,9 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
           args: [warningMessage, tabUrl]
         });
       });
-      }
-      return;
-      }
-    
-    
+    }
+    return;
+  }
   },
   { urls: ["<all_urls>"] },
   ["requestHeaders"]
