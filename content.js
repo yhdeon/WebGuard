@@ -109,6 +109,12 @@ chrome.runtime.sendMessage({ action: "checkXSS", url: url }, (response) => {
   }
 });
 
+chrome.runtime.sendMessage({
+  action: "updateFlag",
+  flagValue: true
+  
+});
+
 
 });
 

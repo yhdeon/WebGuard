@@ -86,6 +86,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
     const excludedDomain = "virustotal.com";
     console.log("in csrf func")
     if (details.url.includes(excludedDomain)) return;
+    if (globalFlag === false) return;
     if (["POST", "PUT", "DELETE"].includes(details.method)) {
       const hasCSRF = details.requestHeaders.some(header =>
           ["x-csrf-token", "x-requested-with"].includes(header.name.toLowerCase())
