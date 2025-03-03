@@ -4,7 +4,7 @@ const navigationStates = {};
 
 import { clearExpiredBlockedSites, blockSite, isBlocked } from './background_script/temporaryBlock.js';
 import { clearExpiredWhitelistedSites, addTemporaryWhitelist, isTemporarilyWhitelisted} from './background_script/temporaryWhitelist.js';
-import { checkMalicious, checkCsrf, checkSessionCookie, runAllSecurityChecks, pendingCsrfWarnings} from './background_script/initialSecurityCheck.js';
+import { checkMalicious,  checkSessionCookie, runAllSecurityChecks, pendingCsrfWarnings} from './background_script/initialSecurityCheck.js';
 import { checkURLWithDB, addURLToDB} from './background_script/whitelistDatabase.js';
 import { fetchFile, checkFileHashWithVirusTotal, analyzeZipFile, saveFile} from './background_script/downloadCheck.js';
 
@@ -12,6 +12,8 @@ import * as JSZip from './libs/jszip.min.js';
 // import {checkSQLInjection} from './background_script/SQLICheck.js'
 // import { extractMainDomain } from './extraMainURL.js';
 // import { checkUrlWithVirusTotal } from './virusTotalCheck.js';
+
+let globalFlag = true;
 
 // -------------------- set "alarm" to run those 2 function which clear expired block site and expire whitelist site-------------------------------------
 chrome.alarms.create("clearExpiredSutes", { periodInMinutes: 1 });
@@ -169,7 +171,7 @@ chrome.cookies.onChanged.addListener(function (changeInfo) {
 });
 
 // ---------------------- Message Handling ----------------------
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if (message.action === "block") {
     blockSite(message.url, sender.tab.id);
   } else if (message.action === "closeTab") {
@@ -180,6 +182,67 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   else if (message.action === "whitelist") {
     addTemporaryWhitelist(message.url);
   }
+  else if (message.action === "checkXSS") {
+          const url = message.url;
+    
+          
+          if (!url.includes("?")) {
+              sendResponse({ isVulnerable: false, report: [] });
+              return;
+          }
+    
+          console.log(`Checking XSS for URL: ${url}`);
+    
+          const xssPayloadList = [
+              `<script>alert('XSS')</script>`,
+              `"><script>alert('XSS')</script>`,
+              `' onmouseover='alert("XSS")'`,
+              `javascript:alert('XSS')`,
+              `<img src="x" onerror="alert('XSS')">`
+          ];
+    
+          const parsedUrl = new URL(url);
+          const params = parsedUrl.searchParams;
+          let vuln = false;
+          let detailedReport = [];
+    
+          for (const [key, value] of params) {
+              for (const payload of xssPayloadList) {
+                  const testUrl = `${parsedUrl.origin}${parsedUrl.pathname}?${key}=${encodeURIComponent(payload)}`;
+                  console.log(`Testing: ${testUrl}`);
+                  
+                  try {
+                      const response = await fetch(testUrl);
+                      const responseText = await response.text();
+    
+                      if (
+                          responseText.includes("script") ||
+                          responseText.includes("alert") ||
+                          responseText.includes("onerror") ||
+                          responseText.includes("onload")
+                      ) {
+                          vuln = true;
+                          detailedReport.push({
+                              parameter: key,
+                              payload,
+                              response: "Possible XSS vulnerability"
+                          });
+                          break;
+                      }
+                  } catch (err) {
+                      console.error(`Error testing ${testUrl}:`, err);
+                  }
+              }
+          }
+    
+          sendResponse({ isVulnerable: vuln, report: detailedReport });
+      }
+      else if (message.action === "updateFlag") {
+        globalFlag = message.flagValue;
+        console.log("Flag updated:", globalFlag);
+      }
+       
+
 });
 
 // "sandbox" download check 
@@ -252,61 +315,62 @@ chrome.downloads.onCreated.addListener(async (downloadItem) => {
 
 // ----------------SQL & XSS check-------------------------------------
 
-chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-  if (message.action === "checkXSS") {
-      const url = message.url;
+// chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+//   console.log("I MANAGED TO GET HERE");
+//   if (message.action === "checkXSS") {
+//       const url = message.url;
 
       
-      if (!url.includes("?")) {
-          sendResponse({ isVulnerable: false, report: [] });
-          return;
-      }
+//       if (!url.includes("?")) {
+//           sendResponse({ isVulnerable: false, report: [] });
+//           return;
+//       }
 
-      console.log(`Checking XSS for URL: ${url}`);
+//       console.log(`Checking XSS for URL: ${url}`);
 
-      const xssPayloadList = [
-          `<script>alert('XSS')</script>`,
-          `"><script>alert('XSS')</script>`,
-          `' onmouseover='alert("XSS")'`,
-          `javascript:alert('XSS')`,
-          `<img src="x" onerror="alert('XSS')">`
-      ];
+//       const xssPayloadList = [
+//           `<script>alert('XSS')</script>`,
+//           `"><script>alert('XSS')</script>`,
+//           `' onmouseover='alert("XSS")'`,
+//           `javascript:alert('XSS')`,
+//           `<img src="x" onerror="alert('XSS')">`
+//       ];
 
-      const parsedUrl = new URL(url);
-      const params = parsedUrl.searchParams;
-      let vuln = false;
-      let detailedReport = [];
+//       const parsedUrl = new URL(url);
+//       const params = parsedUrl.searchParams;
+//       let vuln = false;
+//       let detailedReport = [];
 
-      for (const [key, value] of params) {
-          for (const payload of xssPayloadList) {
-              const testUrl = `${parsedUrl.origin}${parsedUrl.pathname}?${key}=${encodeURIComponent(payload)}`;
-              console.log(`Testing: ${testUrl}`);
+//       for (const [key, value] of params) {
+//           for (const payload of xssPayloadList) {
+//               const testUrl = `${parsedUrl.origin}${parsedUrl.pathname}?${key}=${encodeURIComponent(payload)}`;
+//               console.log(`Testing: ${testUrl}`);
               
-              try {
-                  const response = await fetch(testUrl);
-                  const responseText = await response.text();
+//               try {
+//                   const response = await fetch(testUrl);
+//                   const responseText = await response.text();
 
-                  if (
-                      responseText.includes("script") ||
-                      responseText.includes("alert") ||
-                      responseText.includes("onerror") ||
-                      responseText.includes("onload")
-                  ) {
-                      vuln = true;
-                      detailedReport.push({
-                          parameter: key,
-                          payload,
-                          response: "Possible XSS vulnerability"
-                      });
-                      break;
-                  }
-              } catch (err) {
-                  console.error(`Error testing ${testUrl}:`, err);
-              }
-          }
-      }
+//                   if (
+//                       responseText.includes("script") ||
+//                       responseText.includes("alert") ||
+//                       responseText.includes("onerror") ||
+//                       responseText.includes("onload")
+//                   ) {
+//                       vuln = true;
+//                       detailedReport.push({
+//                           parameter: key,
+//                           payload,
+//                           response: "Possible XSS vulnerability"
+//                       });
+//                       break;
+//                   }
+//               } catch (err) {
+//                   console.error(`Error testing ${testUrl}:`, err);
+//               }
+//           }
+//       }
 
-      sendResponse({ isVulnerable: vuln, report: detailedReport });
-  }
-  return true; 
-});
+//       sendResponse({ isVulnerable: vuln, report: detailedReport });
+//   }
+//   return true; 
+// });

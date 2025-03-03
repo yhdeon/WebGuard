@@ -89,6 +89,27 @@ window.addEventListener("load", () => {
   // add the trigger here
   detectInput();
   detectPwdInput();
+
+
+  // Send message to check for XSS vulnerabilities
+chrome.runtime.sendMessage({ action: "checkXSS", url: url }, (response) => {
+  console.log("test");
+  if (chrome.runtime.lastError) {
+      console.error("Error sending XSS request:", chrome.runtime.lastError.message);
+  } else if (response) {
+      if (response.isVulnerable) {
+          
+          //htmlOutput.textContent = ` WARNING: This site might be vulnerable to XSS!\n\n${JSON.stringify(stats, null, 2)}`;
+          const message = `  WARNING: This site might be vulnerable to XSS! ${node.outerHTML}`;
+          addAggregatedWarning(message);
+      } else {
+          console.log("No XSS Vulnerabilities detected.");
+          //htmlOutput.textContent = ` No XSS Vulnerabilities detected.\n\n${JSON.stringify(stats, null, 2)}`;
+      }
+  }
+});
+
+
 });
 
 // ---------------------- SQL XSS Check ----------------------
@@ -121,8 +142,8 @@ function detectInput() {
   
   
   
-  //const usernameFields = document.querySelectorAll('input[name="id"]');
-  const usernameFields = document.querySelectorAll('input[name="email"]');
+  const usernameFields = document.querySelectorAll('input[name="id"]');
+  //const usernameFields = document.querySelectorAll('input[name="email"]');
   // const usernameFields = document.querySelectorAll('input[type="text"]'); // For ALL textboxes (not recommended)
   if (usernameFields.length > 0) {
       console.log("Username input field detected.");
@@ -213,6 +234,14 @@ function detectInput() {
                          displayWarningPopup([message], window.location.href);
                          //displayWarningPopup([message], window.location.href);
                            // set flag so that CSRF doesnt trigger after this event
+
+                           chrome.runtime.sendMessage({
+                            action: "updateFlag",
+                            flagValue: false
+                            
+                        });
+
+
                       }
                       else{
                        
@@ -254,22 +283,9 @@ function detectPwdInput() {
 // Run the detection functions
 
 // run the xss and sql injection detection functions (URL MODE)
+function runDetection(){
+  console.log("does this show at all?");
+}
 
 
-// // Send message to check for XSS vulnerabilities
-// chrome.runtime.sendMessage({ action: "checkXSS", url: url }, (response) => {
-//   if (chrome.runtime.lastError) {
-//       console.error("Error sending XSS request:", chrome.runtime.lastError.message);
-//   } else if (response) {
-//       if (response.isVulnerable) {
-          
-//           //htmlOutput.textContent = ` WARNING: This site might be vulnerable to XSS!\n\n${JSON.stringify(stats, null, 2)}`;
-//           const message = `  WARNING: This site might be vulnerable to XSS! ${node.outerHTML}`;
-//           addAggregatedWarning(message);
-//       } else {
-//           console.log("No XSS Vulnerabilities detected.");
-//           //htmlOutput.textContent = ` No XSS Vulnerabilities detected.\n\n${JSON.stringify(stats, null, 2)}`;
-//       }
-//   }
-// });
 
