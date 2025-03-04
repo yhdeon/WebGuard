@@ -8,7 +8,7 @@ function displayWarningPopup(warnings, url) {
     chrome.runtime.sendMessage({ action: "block", url });
     chrome.runtime.sendMessage({ action: "closeTab" });
   } else {
-    console.log(`✅ User chose to proceed with ${url}`);
+    console.log(`User chose to proceed with ${url}`);
   }
 }
 
