@@ -1,0 +1,17 @@
+This document is a user manual for the WebGuard Web Browser Extension.
+
+Firstly, how do you install the extension?
+Download the source code from this github and extract it to any location you wish.
+Launch a web browser, and import the extension into the browser. 
+
+For chrome users an example of the process is as follows:
+extensions > manage extensions > ensure developer mode is on > load unpacked > select the folder of the webguard extension 
+
+there we go! Now your Webguard extension is active. You can turn the extension on and off via the extension management page of your web browser.
+
+How do you operate the browser extension?
+No user interaction is required, there are no buttons whatsoever in this extension, simply just have it running and the checks will be performed.
+You will be informed if there are any vulnerabilities on the website via a popup notification box that will show up. 
+
+When popup notification boxes show up, you may either click on "ok" or "cancel". If you choose ok, you are acknowledging the vulnerabilities but not blocking/blacklisting the website. If you choose to cancel, the website will be blocked/blacklisted for 1 minute.
+Vulnerabiltiies that are detected by the extension include: SQL Injection vulnerability, XSS Vulnerabilities, CSRF Vulnerabilities, Malware Download vulnerabilities.
