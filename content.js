@@ -128,22 +128,22 @@ let SQLWarning = [];
 
 function detectInput() {
   const sqlPayloadList = [
-    // `' OR '1'='1`,
-    // `" OR "1"="1`,
-    // `' OR '1'='1' --`,
-    // `" OR "1"="1" --`,
-     `admin' --`
-    // `' OR 1=1 --`,
-    // `1' or '1' = '1`,
-    // `') OR ('1'='1`,
-    // `1; DROP TABLE users --`,
-    // `1; SELECT * FROM information_schema.tables --`,
-    // `' OR 'x'='x`,
-    // `") OR ("x"="x`,
-    // `' UNION SELECT NULL, NULL, NULL --`,
-    // `' AND 1=CONVERT(int, (SELECT @@version)) --`,
-    // `' AND (SELECT COUNT(*) FROM users) > 0 --`,
-    // `' OR EXISTS(SELECT * FROM users WHERE username = 'admin') --`
+    `' OR '1'='1`,
+    `" OR "1"="1`,
+    `' OR '1'='1' --`,
+    `" OR "1"="1" --`,
+    `admin' --`
+    `' OR 1=1 --`,
+    `1' or '1' = '1`,
+    `') OR ('1'='1`,
+    `1; DROP TABLE users --`,
+    `1; SELECT * FROM information_schema.tables --`,
+    `' OR 'x'='x`,
+    `") OR ("x"="x`,
+    `' UNION SELECT NULL, NULL, NULL --`,
+    `' AND 1=CONVERT(int, (SELECT @@version)) --`,
+    `' AND (SELECT COUNT(*) FROM users) > 0 --`,
+    `' OR EXISTS(SELECT * FROM users WHERE username = 'admin') --`
   ];
   
   
