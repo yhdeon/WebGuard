@@ -1,5 +1,6 @@
 # ICT2214 - Web Security
-## P1A Group 3
+## WebGuard
+### P1A Group 3
 
 Members: <br/>
 Yen Hao 2301919 <br/>
