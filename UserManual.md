@@ -1,9 +1,9 @@
 ## **This document is a user manual for the WebGuard Web Browser Extension for Google Chrome.**
 
 ### To install WebGuard:
-> Download the source code from this github and extract it to any location of your preference.
-> Launch Google Chrome web browser, and import the extension into the browser. 
-(You can do this by: extensions > manage extensions > ensure developer mode is on > load unpacked > select the folder of the webguard extension)
+> 1. Download the source code from this github and extract it to any location of your preference.
+> 2 Launch Google Chrome web browser, and import the extension into the browser. 
+>> (You can do this by: extensions > manage extensions > ensure developer mode is on > load unpacked > select the folder of the webguard extension)
 
 Afterwhich, the Webguard extension is now active on your Google Chrome. You can turn the extension on and off via the extension management page of your web browser.
 
